@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock title %}
+
+{% block body_home %}
+<div class="container">
+    <!-- Statistics Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card bg-primary text-white">
+                <div class="stats-icon">
+                    <i class="bi bi-list-check"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="total-todos">0</h3>
+                    <p>Total Todos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card bg-success text-white">
+                <div class="stats-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="completed-todos">0</h3>
+                    <p>Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card bg-warning text-white">
+                <div class="stats-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="pending-todos">0</h3>
+                    <p>Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card bg-info text-white">
+                <div class="stats-icon">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="in-progress-todos">0</h3>
+                    <p>In Progress</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Add New Todo Form -->
+            <div class="todo-card mb-4">
+                <h2 class="mb-4"><i class="bi bi-plus-circle me-2"></i>Add New Todo</h2>
+                <form action="/" method="post" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="title" class="form-label">Todo Title</label>
+                            <input name="titles" id="title" type="text" class="form-control" placeholder="Enter todo title" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <input name="category" id="category" type="text" class="form-control" placeholder="Enter category">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="desc" class="form-label">Description</label>
+                        <textarea name="descriptions" id="desc" class="form-control" rows="3" placeholder="Enter todo description" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input name="due_date" id="due_date" type="datetime-local" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select name="priority" id="priority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Add Todo
+                    </button>
+                </form>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="todo-card mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <select id="status-filter" class="form-select" onchange="applyFilters()">
+                            <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Status</option>
+                            <option value="Pending" {% if current_status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="In Progress" {% if current_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Completed" {% if current_status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="priority-filter" class="form-select" onchange="applyFilters()">
+                            <option value="all" {% if current_priority == 'all' %}selected{% endif %}>All Priorities</option>
+                            <option value="High" {% if current_priority == 'High' %}selected{% endif %}>High</option>
+                            <option value="Medium" {% if current_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                            <option value="Low" {% if current_priority == 'Low' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="category-filter" class="form-select" onchange="applyFilters()">
+                            <option value="all" {% if current_category == 'all' %}selected{% endif %}>All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}" {% if current_category == category %}selected{% endif %}>{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <input type="text" id="search-input" class="form-control" placeholder="Search todos..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-4">
+                        <select id="sort-by" class="form-select" onchange="applyFilters()">
+                            <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>Sort by Created Date</option>
+                            <option value="due_date" {% if current_sort == 'due_date' %}selected{% endif %}>Sort by Due Date</option>
+                            <option value="priority" {% if current_sort == 'priority' %}selected{% endif %}>Sort by Priority</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Todo List -->
+            {% if AllTodo|length == 0 %}
+            <div class="empty-state">
+                <i class="bi bi-clipboard-x display-1 text-muted"></i>
+                <p class="lead">No todos yet. Add your first todo to get started!</p>
+            </div>
+            {% else %}
+            <div class="todo-list">
+                {% for x in AllTodo %}
+                <div class="todo-card {% if x.status == 'Completed' %}completed{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <h3 class="todo-title mb-0">{{x.title}}</h3>
+                                <span class="badge bg-{{x.priority|lower}} ms-2">{{x.priority}}</span>
+                                {% if x.category %}
+                                <span class="badge bg-secondary ms-2">{{x.category}}</span>
+                                {% endif %}
+                            </div>
+                            <p class="todo-description">{{x.desc}}</p>
+                            <div class="todo-meta">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i>Created: {{x.created_at.strftime('%Y-%m-%d %H:%M')}}
+                                </small>
+                                {% if x.due_date %}
+                                <small class="text-muted ms-3">
+                                    <i class="bi bi-clock me-1"></i>Due: {{x.due_date.strftime('%Y-%m-%d %H:%M')}}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="todo-actions">
+                            <select class="form-select form-select-sm status-select mb-2" onchange="updateStatus('{{x.sno}}', this.value)">
+                                <option value="Pending" {% if x.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if x.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if x.status == 'Completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                            <div class="btn-group">
+                                <a href="/update/{{x.sno}}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="/delete/{{x.sno}}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this todo?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStats() {
+    fetch('/get_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-todos').textContent = data.total;
+            document.getElementById('completed-todos').textContent = data.completed;
+            document.getElementById('pending-todos').textContent = data.pending;
+            document.getElementById('in-progress-todos').textContent = data.in_progress;
+        });
+}
+
+function updateStatus(sno, status) {
+    fetch(`/update_status/${sno}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateStats();
+        }
+    });
+}
+
+function applyFilters() {
+    const status = document.getElementById('status-filter').value;
+    const priority = document.getElementById('priority-filter').value;
+    const category = document.getElementById('category-filter').value;
+    const sort = document.getElementById('sort-by').value;
+    const search = document.getElementById('search-input').value;
+    
+    window.location.href = `/?status=${status}&priority=${priority}&category=${category}&sort=${sort}&search=${search}`;
+}
+
+// Initialize stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateStats();
+    
+    // Add search input event listener
+    const searchInput = document.getElementById('search-input');
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(applyFilters, 500);
+    });
+});
+</script>
+{% endblock body_home %}
